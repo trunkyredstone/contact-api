@@ -1,8 +1,11 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: contact-api
 spec:
+  selector:
+    matchLabels:
+      app: contact-api
   replicas: 1
   minReadySeconds: 5
   strategy:
