@@ -1,0 +1,1 @@
+systemfd --no-pid -s http::2536 -- cargo watch -x run

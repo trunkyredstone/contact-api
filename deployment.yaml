@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: contact-api
+spec:
+  replicas: 1
+  minReadySeconds: 5
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: contact-api
+    spec:
+      containers:
+        - name: contact-api
+          image: harbor.atomicvr.co.uk/library/contact-api:latest
+          imagePullPolicy: Always
+          env:
+            - name: CF_SECRET
+              value: ""
+            - name: TO_ADDRESS
+              value: ""
+            - name: FROM_ADDRESS
+              value: ""
+            - name: SMTP_USERNAME
+              value: ""
+            - name: SMTP_PASSWORD
+              value: ""
+            - name: SMTP_HOST
+              value: ""
+          resources:
+            requests:
+              cpu: 10m
+              memory: 10M
+            limits:
+              cpu: 20m
+              memory: 20M

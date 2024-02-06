@@ -1,0 +1,20 @@
+[package]
+name = "contact-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.36.0", features = ["full"] }
+axum = { version = "0.7.4", features = ["tracing"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tower-http = { version = "0.5.1", features = ["trace", "cors"] }
+serde_derive = "1.0.196"
+serde = "1.0.196"
+cf-turnstile = "0.1.0"
+envconfig = "0.10.0"
+dotenv = "0.15.0"
+listenfd = "1.0.1"
+lettre = "0.11.4"
