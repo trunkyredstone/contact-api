@@ -11,6 +11,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: contact-api
+                name: contact-api-service
                 port:
-                  number: 2536
+                  number: 80
