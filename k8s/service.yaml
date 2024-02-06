@@ -4,8 +4,7 @@ metadata:
   name: contact-api-service
 spec:
   selector:
-    matchLabels:
-      app: contact-api
+    app: contact-api
   ports:
     - protocol: TCP
       port: 80
