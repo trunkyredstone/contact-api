@@ -4,7 +4,8 @@ metadata:
   name: contact-ingress
 spec:
   rules:
-    - http:
+    - host: contact.romanolucchesi.com
+      http:
         paths:
           - path: /
             pathType: Prefix
