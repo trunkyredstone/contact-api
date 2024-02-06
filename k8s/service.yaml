@@ -4,7 +4,8 @@ metadata:
   name: contact-api-service
 spec:
   selector:
-    app.kubernetes.io/name: ContactAPI
+    matchLabels:
+      app: contact-api
   ports:
     - protocol: TCP
       port: 80
