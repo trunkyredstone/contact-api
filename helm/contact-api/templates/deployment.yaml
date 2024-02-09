@@ -20,18 +20,10 @@ spec:
           image: harbor.atomicvr.co.uk/library/contact-api:latest
           imagePullPolicy: Always
           env:
-            - name: CF_SECRET
-              value: ""
-            - name: TO_ADDRESS
-              value: ""
-            - name: FROM_ADDRESS
-              value: ""
-            - name: SMTP_USERNAME
-              value: ""
-            - name: SMTP_PASSWORD
-              value: ""
-            - name: SMTP_HOST
-              value: ""
+            {{- range $name, $value := .Values.env }}
+            - name: {{ $name }}
+              value: {{ $value }}
+            {{- end }}
           resources:
             requests:
               cpu: 10m
@@ -39,3 +31,5 @@ spec:
             limits:
               cpu: 20m
               memory: 20M
+      imagePullSecrets:
+        - name: regcred

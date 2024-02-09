@@ -13,7 +13,8 @@ use dotenv::dotenv;
 use envconfig::Envconfig;
 use lettre::{Message, SmtpTransport, Transport};
 use lettre::message::header::ContentType;
-use lettre::transport::smtp::authentication::Credentials;
+use lettre::transport::smtp::authentication::{Credentials, Mechanism};
+use lettre::transport::smtp::client::Tls;
 use listenfd::ListenFd;
 use serde_derive::Deserialize;
 use tokio::net::TcpListener;
@@ -69,6 +70,11 @@ async fn main() {
 
     let state = AppState::from_config(Config::init_from_env().unwrap());
 
+    tracing::debug!("CF_SECRET: {}", state.config.cf_secret);
+    tracing::debug!("TO_ADDRESS: {}", state.config.to_address);
+    tracing::debug!("FROM_ADDRESS: {}", state.config.from_address);
+    tracing::debug!("SMTP: {}:{}@{}", state.config.smtp_username, state.config.smtp_password, state.config.smtp_host);
+
     let mut listenfd = ListenFd::from_env();
 
     let app = Router::new().route("/email", post(handler))
@@ -103,8 +109,7 @@ async fn main() {
         None => TcpListener::bind("0.0.0.0:2536").await.unwrap(),
     };
 
-
-    println!("listening on {}", listener.local_addr().unwrap());
+    tracing::info!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -133,14 +138,17 @@ async fn handler(State(state): State<AppState>, Json(payload): Json<EmailData>) 
         return (StatusCode::UNAUTHORIZED, "");
     }
 
+    tracing::trace!("Token authorised");
+
     let smtp_credentials = Credentials::new(state.config.smtp_username, state.config.smtp_password);
 
     let relay = SmtpTransport::relay(&*state.config.smtp_host);
     if let Err(e) = relay {
-        tracing::debug!("{}", e);
+        tracing::debug!("smtp relay error: {}", e);
         return (StatusCode::INTERNAL_SERVER_ERROR, "smtp failure");
     }
-    let relay = relay.unwrap().credentials(smtp_credentials).build();
+    let relay = relay.unwrap().credentials(smtp_credentials).tls(Tls::None).port(25).build();
+    tracing::trace!("Created relay");
 
     let body = format!(r#"You have a new query.
 
@@ -168,8 +176,8 @@ async fn handler(State(state): State<AppState>, Json(payload): Json<EmailData>) 
         .unwrap();
 
     if let Err(e) = relay.send(&email) {
-        tracing::debug!("{}", e);
-        return (StatusCode::INTERNAL_SERVER_ERROR, "smtp failure");
+        tracing::debug!("error sending message {}", e);
+        return (StatusCode::INTERNAL_SERVER_ERROR, "smtp send failure");
     }
 
     (StatusCode::OK, "")
