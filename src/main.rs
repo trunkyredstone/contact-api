@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use axum::{
     extract::Json,
     extract::MatchedPath,
@@ -13,12 +15,14 @@ use dotenv::dotenv;
 use envconfig::Envconfig;
 use lettre::{Message, SmtpTransport, Transport};
 use lettre::message::header::ContentType;
-use lettre::transport::smtp::authentication::{Credentials, Mechanism};
+use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::client::Tls;
 use listenfd::ListenFd;
 use serde_derive::Deserialize;
 use tokio::net::TcpListener;
+use tokio::signal;
 use tower_http::cors::{AllowHeaders, Any, CorsLayer};
+use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use tracing::info_span;
 use tracing_subscriber::layer::SubscriberExt;
@@ -97,6 +101,7 @@ async fn main() {
                 })
         )
         .layer(CorsLayer::new().allow_methods([Method::POST]).allow_origin(Any).allow_headers(AllowHeaders::any()))
+        .layer((TraceLayer::new_for_http(), TimeoutLayer::new(Duration::from_secs(10))))
         .with_state(state);
 
     let listener = match listenfd.take_tcp_listener(0).unwrap() {
@@ -110,7 +115,7 @@ async fn main() {
     };
 
     tracing::info!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).with_graceful_shutdown(shutdown_signal()).await.unwrap();
 }
 
 #[derive(Deserialize)]
@@ -185,4 +190,28 @@ async fn handler(State(state): State<AppState>, Json(payload): Json<EmailData>) 
 
 async fn fallback() -> impl IntoResponse {
     StatusCode::NOT_FOUND
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+        let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+        let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }

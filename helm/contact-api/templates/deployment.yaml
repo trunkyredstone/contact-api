@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: contact-api
-          image: harbor.atomicvr.co.uk/library/contact-api:latest
+          image: harbor.atomicvr.co.uk/library/contact-api:0.1.2
           imagePullPolicy: Always
           env:
             {{- range $name, $value := .Values.env }}
